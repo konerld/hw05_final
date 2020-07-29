@@ -73,24 +73,12 @@ class Comment(models.Model):
         return self.text
 
 
-"""
-class Comment(models.Model):
-    post = models.ForeignKey(Post,
-        on_delete=models.SET_NULL,
-        related_name="comments", blank=True, null=True,
-        verbose_name="Комментарий к посту",
-        help_text="Добавьте комментарий к посту"
-        )
-    author = models.ForeignKey(User,
-        on_delete=models.CASCADE,
-        related_name='comments',
-        verbose_name = 'Автор',
-        help_text="Автор комментария"
-        )
-    text = models.CharField(max_length=1000,
-        verbose_name='Комментарий к посту'
-        )
-    created = models.DateTimeField("date published", auto_now_add=True, )
-    class Meta:
-        ordering = ('created',)
-"""
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User, related_name="follower",
+        on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        User, related_name="following",
+        on_delete=models.CASCADE
+    )
