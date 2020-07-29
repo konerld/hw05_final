@@ -120,7 +120,6 @@ def server_error(request):
 @login_required
 def add_comment(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
-    comments = Comment.objects.filter(post=post)
     if request.user != post.author:
         return redirect('post', username=username, post_id=post_id)
     form = CommentForm(request.POST or None,
@@ -145,7 +144,12 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    pass
+    user = request.user
+    profile = get_object_or_404(User, username=username)
+
+    following
+
+    return
 
 
 @login_required
