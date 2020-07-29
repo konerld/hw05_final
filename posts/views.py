@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.cache import cache_page
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from .models import Post, Group, User, Comment
+from .models import Post, Group, User, Comment, Follow
 from . forms import PostForm, CommentForm
 
 
@@ -137,6 +137,19 @@ def add_comment(request, username, post_id):
 
 @login_required
 def follow_index(request):
+    user = request.user
+
+
+    # post_list = Post.objects.all()
+    paginator = Paginator(post_list, 10)
+    page_number = request.GET.get('page')
+    page = paginator.get_page(page_number)
+    return render(
+        request,
+        'index.html',
+        {'page': page, 'paginator': paginator}
+    )
+
     # информация о текущем пользователе доступна в переменной request.user
     # ...
     return render(request, "follow.html", {1: 2})
@@ -147,7 +160,7 @@ def profile_follow(request, username):
     user = request.user
     profile = get_object_or_404(User, username=username)
 
-    following
+
 
     return
 
