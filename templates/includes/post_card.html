@@ -5,14 +5,14 @@
     {% endthumbnail %}
     <div class="card-body">
         <p class="card-text">
-            <a href="{% url 'profile' username=author.username %}"><strong class="d-block text-gray-dark">@{{ post.author.username }}</strong></a>
+            <a href="{% url 'profile' username=post.author.username %}"><strong class="d-block text-gray-dark">@{{ post.author.username }}</strong></a>
             {{ post.text|linebreaksbr }}
         </p>
         <div class="d-flex justify-content-between align-items-center">
             <div class="btn-group ">
-                    <a class="btn btn-sm text-muted" href="{% url 'post' author.username post.id %}" role="button">Добавить комментарий</a>
+                    <a class="btn btn-sm text-muted" href="{% url 'post' post.author.username post.id %}" role="button">Добавить комментарий</a>
                 {% if post.author.pk == request.user.pk %}
-                    <a class="btn btn-sm text-muted" href="{% url 'post_edit' author.username post.id %}" role="button">Редактировать</a>
+                    <a class="btn btn-sm text-muted" href="{% url 'post_edit' post.author.username post.id %}" role="button">Редактировать</a>
                 {% endif %}
             </div>
             <small class="text-muted">{{ post.pub_date|date:"d M Y" }}</small>
