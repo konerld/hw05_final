@@ -134,3 +134,22 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
     if request.method == 'GET':
         return redirect('post', username=username, post_id=post_id)
+
+
+@login_required
+def follow_index(request):
+    # информация о текущем пользователе доступна в переменной request.user
+    # ...
+    return render(request, "follow.html", {1: 2})
+
+
+@login_required
+def profile_follow(request, username):
+    pass
+
+
+@login_required
+def profile_unfollow(request, username):
+    pass
+
+
