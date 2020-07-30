@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.cache import cache_page
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from .models import Post, Group, User, Comment, Follow
 from . forms import PostForm, CommentForm
 
@@ -66,7 +67,6 @@ def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
     author = post.author
     comments = post.comments.all()  # Comment.objects.filter(post=post)
-    # form = CommentForm(instance=None)
     form = CommentForm(request.POST or None,
                        instance=None
                        )
@@ -135,38 +135,64 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
 
 
+# @login_required
+# def follow_index(request):
+#     user = request.user
+#     user_following = Follow.objects.filter(user=user)
+#
+#     # author_list =
+#     post_list = Post.objects.filter(author__in=user_following).order_by('-pub_date').all()
+#     paginator = Paginator(post_list, 10)
+#     page_number = request.GET.get('page')
+#     page = paginator.get_page(page_number)
+#     return render(
+#         request,
+#         "follow.html",
+#         {
+#             'page': page,
+#             'paginator': paginator
+#         }
+#     )
+
+
 @login_required
 def follow_index(request):
-    user = request.user
-
-
-    # post_list = Post.objects.all()
+    post_list = Post.objects.order_by("-pub_date").annotate(
+        comment_count=Count('comment_post', distinct=True)).prefetch_related(
+        'author', 'group', 'author__following').filter(author__following__user=request.user).all()
     paginator = Paginator(post_list, 10)
+
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    return render(
-        request,
-        'index.html',
-        {'page': page, 'paginator': paginator}
-    )
+    return render(request, 'follow.html', {'page': page, 'paginator': paginator})
 
-    # информация о текущем пользователе доступна в переменной request.user
-    # ...
-    return render(request, "follow.html", {1: 2})
+
+@login_required
+def profile_follow(request, username):
+    if not Follow.objects.filter(author__username=username, user=request.user).exists():
+        # prevent duplicate followings
+        author = get_object_or_404(User, username=username)
+        follow = Follow.objects.create(user=request.user, author=author)
+        follow.save()
+
+    return redirect('profile', username=username)
 
 
 @login_required
 def profile_follow(request, username):
     user = request.user
-    profile = get_object_or_404(User, username=username)
-
-
-
-    return
+    author = User.objects.get(username=username)
+    follow_check = Follow.objects.filter(user=user, author=author.id).count()
+    if follow_check == 0 and request.user.username != username:
+        Follow.objects.create(user=request.user, author=author)
+    return redirect("profile", username=username)
 
 
 @login_required
 def profile_unfollow(request, username):
-    pass
-
-
+    user = request.user.id
+    author = User.objects.get(username=username)
+    follow_check = Follow.objects.filter(user=user, author=author.id).count()
+    if follow_check == 1:
+        Follow.objects.filter(user=request.user, author=author).delete()
+    return redirect("profile", username=username)
