@@ -51,6 +51,8 @@ def profile(request, username):
     paginator = Paginator(posts, 10)
     page_num = request.GET.get('page')
     page = paginator.get_page(page_num)
+    followers_sum = Follow.objects.filter(author=author).count()
+    following_sum = Follow.objects.filter(user=request.user).count()
     return render(
         request,
         'profile.html',
@@ -58,6 +60,8 @@ def profile(request, username):
             'page': page,
             'paginator': paginator,
             'author': author,
+            'followers_sum': followers_sum,
+            'following_sum': following_sum,
             'post_sum': posts.count()
         }
     )
@@ -70,6 +74,9 @@ def post_view(request, username, post_id):
     form = CommentForm(request.POST or None,
                        instance=None
                        )
+    followers_sum = Follow.objects.filter(author=post.author).count()
+    following_sum = Follow.objects.filter(user=request.user).count()
+    post_sum = Post.objects.filter(author=author).count()
     return render(
         request,
         'post.html',
@@ -77,7 +84,10 @@ def post_view(request, username, post_id):
             'post': post,
             'author': author,
             'items': comments,
-            'form': form
+            'form': form,
+            'followers_sum': followers_sum,
+            'following_sum': following_sum,
+            'post_sum': post_sum
         }
     )
 

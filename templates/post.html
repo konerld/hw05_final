@@ -3,7 +3,7 @@
 {% block content %}
     <main role="main" class="container">
         <div class="row">
-            {% include "includes/profile_card.html" with author=author post=post %}
+            {% include "includes/profile_card.html" with author=author postpost=post followers_sum=followers_sum  following_sum=following_sum %}
         </div>
         {% include "includes/post_item.html" with post=post %}
         {% include "includes/add_post_comment_form.html" with form=form %}
