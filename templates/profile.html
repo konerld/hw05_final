@@ -4,7 +4,7 @@
 {% block content %}
     <main role="main" class="container">
         <div class="row">
-            {% include "includes/profile_card.html" with author=author post=post %}
+            {% include "includes/profile_card.html" with author=author post=post following=following %}
 
             <div class="col-md-9">
                 {% for post in page %}

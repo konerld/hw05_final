@@ -7,7 +7,7 @@
             <div class="h3 text-muted">
                  @{{ author.get_username }}
             </div>
-            {% include "includes/follow_btn.html" with profile=author %}
+            {% include "includes/follow_btn.html" with profile=author following=following %}
         </div>
         <ul class="list-group list-group-flush">
             <li class="list-group-item">

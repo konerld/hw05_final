@@ -12,7 +12,6 @@ urlpatterns = [
     path("follow/",
          views.follow_index,
          name="follow_index"),
-
     path('<str:username>/',
          views.profile,
          name='profile'),
@@ -25,7 +24,6 @@ urlpatterns = [
     path("<str:username>/<int:post_id>/comment",
          views.add_comment,
          name="add_comment"),
-
     path("<str:username>/follow/",
          views.profile_follow,
          name="profile_follow"),
