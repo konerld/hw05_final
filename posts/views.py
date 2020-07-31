@@ -154,18 +154,6 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
 
 
-# @login_required
-# def follow_index(request):
-#     post_list = Post.objects.order_by("-pub_date").annotate(
-#         comment_count=Count('comment_post', distinct=True)).prefetch_related(
-#         'author', 'group', 'author__following').filter(author__following__user=request.user).all()
-#     paginator = Paginator(post_list, 10)
-#
-#     page_number = request.GET.get('page')
-#     page = paginator.get_page(page_number)
-#     return render(request, 'follow.html', {'page': page, 'paginator': paginator})
-
-
 @login_required()
 def follow_index(request):
     obj_list = Follow.objects.select_related('author', 'user').filter(user=request.user)

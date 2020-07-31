@@ -229,3 +229,68 @@ class PageTest(TestCase):
                           "Не найден файл картинки для теста!")
         types = ['jpg', 'jpeg', 'gif', 'png']
         self.assertEqual(self.wrong_image_path.split('.')[-1] not in types, True)
+
+
+class TestFollowings(TestCase):
+    def setUp(self):
+        self.subscriber = User.objects.create_user(username='Vova')
+        self.bloger = User.objects.create_user(username='Alex')
+        self.auth_subscriber = Client()
+        self.auth_bloger = Client()
+        self.auth_subscriber.force_login(self.subscriber)
+
+        # self.non_auth_client = Client()
+        # self.group = Group.objects.create(
+        #     title="test group",
+        #     slug='test-slug',
+        #     description='description',
+        # )
+        # self.image_path = './posts/test_data/monkey.png'
+        # self.wrong_image_path = './posts/test_data/monkey.txt'
+
+    def check_following(self, url, followers_cnt, following_sum_cnt):
+        response = self.auth_subscriber.get(url)
+        self.assertEqual(response.status_code, 200)
+        # if 'paginator' in response.context:
+        #     check_post = response.context['page'][0]
+        # else:
+        #     check_post = response.context['post']
+        #
+        # self.assertEqual(check_post.text, post_text)
+        # self.assertEqual(check_post.group, group)
+        # self.assertEqual(check_post.author, user)
+
+
+    def test_auth_user_can_work_with_subscribe(self):
+        """
+        Тест проверяет, что авторизованный пользователь может
+        подписываться/отписываться на других пользователей.
+        """
+        post = Post.objects.create(
+            text='This post for test subscribes',
+            author=self.bloger
+        )
+
+        urls_list = [
+            reverse(
+                'profile',
+                kwargs={'username': self.subscriber.username}
+            ),
+            reverse(
+                'post',
+                kwargs={
+                    'username': self.bloger.username,
+                    'post_id': post.id
+                }
+            )
+        ]
+        response = self.auth_subscriber.post(
+            reverse(
+                'profile_follow',
+                kwargs={'username': self.bloger.username}
+            ),
+            follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        for url in urls_list:
+            self.check_following(url, 0, 1)
