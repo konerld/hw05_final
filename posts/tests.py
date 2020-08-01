@@ -253,7 +253,7 @@ class TestComment(TestCase, CommonFunc):
         post = Post.objects.create(
             text="This post for test comments", author=self.member
         )
-        response = self.client.post(
+        response = self.auth_member.post(
             reverse(
                 "add_comment", kwargs={"username": self.member, "post_id": post.id,}
             ),
@@ -271,3 +271,11 @@ class TestComment(TestCase, CommonFunc):
             ),
         )
         self.assertContains(response, "test comment", status_code=200)
+        response = self.self.no_auth_guest.post(
+            reverse(
+                "add_comment", kwargs={"username": self.member, "post_id": post.id, }
+            ),
+            data={"text": "test comment"},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
