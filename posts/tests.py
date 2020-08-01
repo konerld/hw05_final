@@ -1,10 +1,24 @@
 from django.test import TestCase, Client
-from posts.models import Post, User, Group
+from posts.models import Post, User, Group, Follow
 from django.urls import reverse
 import os
 
 
-class PageTest(TestCase):
+class CommonFunc():
+    def check_post_on_page(self, client, url, post_text, user, group):
+        response = client.get(url)
+        self.assertEqual(response.status_code, 200)
+        if 'paginator' in response.context:
+            check_post = response.context['page'][0]
+        else:
+            check_post = response.context['post']
+
+        self.assertEqual(check_post.text, post_text)
+        self.assertEqual(check_post.group, group)
+        self.assertEqual(check_post.author, user)
+
+
+class PageTest(TestCase, CommonFunc):
     def setUp(self):
         self.user = User.objects.create_user(username='skywalker')
         self.auth_client = Client()
@@ -71,18 +85,6 @@ class PageTest(TestCase):
                                         "не переадресовывается на страницу "
                                         "входа (login)!")
 
-    def check_post_on_page(self, url, post_text, user, group):
-        response = self.auth_client.get(url)
-        self.assertEqual(response.status_code, 200)
-        if 'paginator' in response.context:
-            check_post = response.context['page'][0]
-        else:
-            check_post = response.context['post']
-
-        self.assertEqual(check_post.text, post_text)
-        self.assertEqual(check_post.group, group)
-        self.assertEqual(check_post.author, user)
-
     def test_post_exists_on_pages(self):
         """
         Тест создает пост и проверяет его отображение по всем страницам из
@@ -111,7 +113,8 @@ class PageTest(TestCase):
         ]
 
         for url in urls_list:
-            self.check_post_on_page(url,
+            self.check_post_on_page(self.auth_client,
+                                    url,
                                     text,
                                     self.user,
                                     self.group)
@@ -158,7 +161,8 @@ class PageTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         for url in edit_urls_list:
-            self.check_post_on_page(url,
+            self.check_post_on_page(self.auth_client,
+                                    url,
                                     new_text,
                                     self.user,
                                     self.group)
@@ -231,35 +235,40 @@ class PageTest(TestCase):
         self.assertEqual(self.wrong_image_path.split('.')[-1] not in types, True)
 
 
-class TestFollowings(TestCase):
+class TestFollowings(TestCase, CommonFunc):
     def setUp(self):
-        self.subscriber = User.objects.create_user(username='Vova')
+        self.subscriber = User.objects.create_user(username='vova')
         self.bloger = User.objects.create_user(username='Alex')
+        self.no_subscriber = User.objects.create_user(username='goga')
         self.auth_subscriber = Client()
         self.auth_bloger = Client()
+        self.auth_no_subscriber = Client()
         self.auth_subscriber.force_login(self.subscriber)
-
-        # self.non_auth_client = Client()
-        # self.group = Group.objects.create(
-        #     title="test group",
-        #     slug='test-slug',
-        #     description='description',
-        # )
-        # self.image_path = './posts/test_data/monkey.png'
-        # self.wrong_image_path = './posts/test_data/monkey.txt'
+        self.auth_no_subscriber.force_login(self.no_subscriber)
 
     def check_following(self, url, followers_cnt, following_sum_cnt):
+        self.assertEqual(Follow.objects.count(), 0)
         response = self.auth_subscriber.get(url)
         self.assertEqual(response.status_code, 200)
-        # if 'paginator' in response.context:
-        #     check_post = response.context['page'][0]
-        # else:
-        #     check_post = response.context['post']
-        #
-        # self.assertEqual(check_post.text, post_text)
-        # self.assertEqual(check_post.group, group)
-        # self.assertEqual(check_post.author, user)
-
+        response = self.auth_subscriber.post(
+            reverse(
+                'profile_follow',
+                kwargs={'username': self.bloger.username}
+            ),
+            follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Follow.objects.count(), 1)
+        response = self.auth_subscriber.get(url)
+        self.assertEqual(response.status_code, 200)
+        response = self.auth_subscriber.post(
+            reverse(
+                'profile_unfollow',
+                kwargs={'username': self.bloger.username}
+            ),
+            follow=True
+        )
+        self.assertEqual(Follow.objects.count(), 0)
 
     def test_auth_user_can_work_with_subscribe(self):
         """
@@ -284,13 +293,25 @@ class TestFollowings(TestCase):
                 }
             )
         ]
-        response = self.auth_subscriber.post(
-            reverse(
-                'profile_follow',
-                kwargs={'username': self.bloger.username}
-            ),
-            follow=True
-        )
-        self.assertEqual(response.status_code, 200)
         for url in urls_list:
             self.check_following(url, 0, 1)
+
+    def test_post_on_subscribes_page(self):
+        """
+        Тест проверяет, что новая запись появляется
+        в ленте тех, кто на подписан на автора
+        и не появляется в ленте тех, кто не подписан на него.
+        """
+        post_text = 'This post for test subscribes line'
+        post = Post.objects.create(
+            text=post_text,
+            author=self.bloger
+        )
+        Follow.objects.create(user=self.subscriber, author=self.bloger)
+        self.assertEqual(Follow.objects.count(), 1)
+        url = reverse('follow_index')
+        self.check_post_on_page(self.auth_subscriber, url, post_text, self.bloger, None)
+        response = self.auth_no_subscriber.get(url)
+        self.assertNotIn(post,
+                         response.context['page'],
+                         "Пользователь не подписан на автора, но видит его посты")
