@@ -253,6 +253,23 @@ class TestComment(TestCase, CommonFunc):
         post = Post.objects.create(
             text="This post for test comments", author=self.member
         )
+        # Проверка не авторизованным пользователем
+        self.no_auth_guest.logout()
+        response = self.no_auth_guest.post(
+            reverse(
+                "add_comment",
+                kwargs={"username": self.auth_member, "post_id": post.id,},
+            ),
+            data={"text": "You can't!"},
+            follow=True,
+        )
+        response = self.auth_member.get(
+            reverse(
+                "post", kwargs={"username": self.member.username, "post_id": post.id}
+            ),
+        )
+        self.assertNotEqual(response, "You can't!")
+        # Проверка авторизованным пользователем
         response = self.auth_member.post(
             reverse(
                 "add_comment", kwargs={"username": self.member, "post_id": post.id,}
@@ -261,7 +278,7 @@ class TestComment(TestCase, CommonFunc):
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(
+        self.assertTrue(
             Comment.objects.filter(post=post, text="test comment").exists(),
             "Комментарий не создался в базе",
         )
@@ -271,11 +288,3 @@ class TestComment(TestCase, CommonFunc):
             ),
         )
         self.assertContains(response, "test comment", status_code=200)
-        response = self.self.no_auth_guest.post(
-            reverse(
-                "add_comment", kwargs={"username": self.member, "post_id": post.id, }
-            ),
-            data={"text": "test comment"},
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
