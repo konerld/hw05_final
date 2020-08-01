@@ -93,5 +93,6 @@ class Follow(models.Model):
         ]
 
 
-    def __str__(self):
-        return self.text
+# class FileModel(models.Model):
+#     name = models.CharField(max_length=255)
+#     file = models.FileField()

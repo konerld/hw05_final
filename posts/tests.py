@@ -123,12 +123,11 @@ class PageTest(TestCase, CommonFunc):
             )
 
     def test_404(self):
-        no_page = "/unknown/"
-        response = self.auth_client.get(no_page)
+        response = self.auth_client.get("/unknown/")
         self.assertEqual(
             response.status_code,
             404,
-            f"Страница {no_page} существует "
+            "Страница '/unknown/' существует "
             " проверьте ошибку 404 на другой странице!",
         )
 

@@ -75,7 +75,7 @@ def profile(request, username):
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
     author = post.author
-    comments = post.comments.all()  # Comment.objects.filter(post=post)
+    comments = post.comments.all()
     form = CommentForm(request.POST or None,
                        instance=None
                        )
@@ -92,7 +92,7 @@ def post_view(request, username, post_id):
                 'post_sum': post_sum
     }
     if request.user.is_authenticated:
-        following = Follow.objects.filter(user=request.user, author=author).first()
+        following = Follow.objects.filter(user=request.user, author=author).exists()
         params.update({'following': following})
     return render(
         request,
@@ -156,9 +156,11 @@ def add_comment(request, username, post_id):
 
 @login_required()
 def follow_index(request):
-    obj_list = Follow.objects.select_related('author', 'user').filter(user=request.user)
+    obj_list = Follow.objects.select_related(
+        'author',
+        'user').filter(user=request.user)
     author_list = [obj.author for obj in obj_list]
-    post_list = Post.objects.filter(author__in=author_list).order_by("-pub_date")
+    post_list = Post.objects.filter(author__in=author_list)
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -175,8 +177,11 @@ def follow_index(request):
 @login_required()
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    obj = Follow.objects.filter(user=request.user, author=author).first()
-    if not obj and author.id != request.user.id:
+    obj = Follow.objects.filter(
+        user=request.user,
+        author=author).get_or_create(user=request.user,
+                                     author=author)
+    if not author.id != request.user.id:
         new = Follow(user=request.user, author=author)
         new.save()
     return redirect('profile', username=username)
