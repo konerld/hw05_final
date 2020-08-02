@@ -4,17 +4,6 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
 from PIL import Image
-import os
-
-
-from django.core.files.images import ImageFile
-
-from shutil import copyfile
-from sorl.thumbnail import get_thumbnail
-
-# from django.core.files import File
-# from django.test import TestCase
-# import mock
 
 
 class CommonFunc:
@@ -180,16 +169,20 @@ class PageTest(TestCase, CommonFunc):
             self.assertContains(response, "<img")
 
     def test_wrong_image(self):
-        # file = SimpleUploadedFile('filename.txt', b'hello world', 'text/plain')
-
-
-        self.assertEquals(
-            os.path.exists(self.wrong_image_path),
-            True,
-            "Не найден файл картинки для теста!",
+        post = Post.objects.create(text="post with bad image",
+                                   author=self.user,
+                                   group=self.group
+                                   )
+        file = SimpleUploadedFile('filename.txt', b'hello world', 'text/plain')
+        response = self.auth_client.post(
+            reverse(
+                "post_edit",
+                kwargs={"post_id": post.id, "username": self.user.username},
+            ),
+            data={"group": self.group.id, "text": "post with bad image", "image": file},
+            follow=True,
         )
-        types = ["jpg", "jpeg", "gif", "png"]
-        self.assertEqual(self.wrong_image_path.split(".")[-1] not in types, True)
+        self.assertTrue(response.context['form'].has_error('image'))
 
 
 class TestFollowings(TestCase, CommonFunc):
