@@ -100,7 +100,6 @@ def post_view(request, username, post_id):
         params
     )
 
-
 @login_required
 def post_edit(request, username, post_id):
     post = get_object_or_404(Post, id=post_id, author__username=username)
@@ -179,9 +178,8 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     obj = Follow.objects.filter(
         user=request.user,
-        author=author).get_or_create(user=request.user,
-                                     author=author)
-    if not author.id != request.user.id:
+        author=author).exists()
+    if not obj and author.id != request.user.id:
         new = Follow(user=request.user, author=author)
         new.save()
     return redirect('profile', username=username)
