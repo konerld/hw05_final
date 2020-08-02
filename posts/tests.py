@@ -92,7 +92,12 @@ class PageTest(TestCase, CommonFunc):
         ]
 
         for url in urls_list:
-            self.check_post_on_page(self.auth_client, url, text, self.user, self.group)
+            with self.subTest(url=url):
+                self.check_post_on_page(self.auth_client,
+                                        url,
+                                        text,
+                                        self.user,
+                                        self.group)
 
     def test_auth_user_can_edit_own_post(self):
         """
@@ -120,9 +125,12 @@ class PageTest(TestCase, CommonFunc):
         )
         self.assertEqual(response.status_code, 200)
         for url in edit_urls_list:
-            self.check_post_on_page(
-                self.auth_client, url, new_text, self.user, self.group
-            )
+            with self.subTest(url=url):
+                self.check_post_on_page(self.auth_client,
+                                        url,
+                                        new_text,
+                                        self.user,
+                                        self.group)
 
     def test_404(self):
         response = self.auth_client.get("/unknown/")
@@ -157,16 +165,21 @@ class PageTest(TestCase, CommonFunc):
                 "post_edit",
                 kwargs={"post_id": post.id, "username": self.user.username},
             ),
-            data={"group": self.group.id, "text": "post with image", "image": img},
+            data={"group": self.group.id,
+                  "text": "post with image",
+                  "image": img},
             follow=True,
         )
-        self.assertEqual(response.status_code, 200, "Ошибка добавления картинки!")
+        self.assertEqual(response.status_code, 200,
+                         "Ошибка добавления картинки!")
         for url in img_urls_list:
-            response = self.auth_client.get(url)
-            self.assertEqual(
-                response.status_code, 200, "Не найдена страница с картинкой!"
-            )
-            self.assertContains(response, "<img")
+            with self.subTest(url=url):
+                response = self.auth_client.get(url)
+                self.assertEqual(response.status_code,
+                                 200,
+                                 "Не найдена страница с картинкой!"
+                )
+                self.assertContains(response, "<img")
 
     def test_wrong_image(self):
         post = Post.objects.create(text="post with bad image",
@@ -179,7 +192,9 @@ class PageTest(TestCase, CommonFunc):
                 "post_edit",
                 kwargs={"post_id": post.id, "username": self.user.username},
             ),
-            data={"group": self.group.id, "text": "post with bad image", "image": file},
+            data={"group": self.group.id,
+                  "text": "post with bad image",
+                  "image": file},
             follow=True,
         )
         self.assertTrue(response.context['form'].has_error('image'))
@@ -195,42 +210,55 @@ class TestFollowings(TestCase, CommonFunc):
         self.auth_no_subscriber = Client()
         self.auth_subscriber.force_login(self.subscriber)
         self.auth_no_subscriber.force_login(self.no_subscriber)
-
-    def check_following(self, url, followers_cnt, following_sum_cnt):
-        self.assertEqual(Follow.objects.count(), 0)
-        response = self.auth_subscriber.get(url)
-        self.assertEqual(response.status_code, 200)
-        response = self.auth_subscriber.post(
-            reverse("profile_follow", kwargs={"username": self.bloger.username}),
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Follow.objects.count(), 1)
-        response = self.auth_subscriber.get(url)
-        self.assertEqual(response.status_code, 200)
-        response = self.auth_subscriber.post(
-            reverse("profile_unfollow", kwargs={"username": self.bloger.username}),
-            follow=True,
-        )
-        self.assertEqual(Follow.objects.count(), 0)
-
-    def test_auth_user_can_work_with_subscribe(self):
-        """
-        Тест проверяет, что авторизованный пользователь может
-        подписываться/отписываться на других пользователей.
-        """
-        post = Post.objects.create(
+        self.post = Post.objects.create(
             text="This post for test subscribes", author=self.bloger
         )
-
-        urls_list = [
-            reverse("profile", kwargs={"username": self.subscriber.username}),
+        self.urls_list = [
+            reverse("profile",
+                    kwargs={"username": self.subscriber.username}),
             reverse(
-                "post", kwargs={"username": self.bloger.username, "post_id": post.id}
+                "post",
+                kwargs={"username": self.bloger.username,
+                        "post_id": self.post.id}
             ),
         ]
-        for url in urls_list:
-            self.check_following(url, 0, 1)
+
+    def test_follow(self):
+        """
+        Тест проверяет, что авторизованный пользователь может
+        подписываться на других пользователей.
+        """
+        for url in self.urls_list:
+            with self.subTest(url=url):
+                follow = Follow.objects.filter(user=self.subscriber,
+                                               author=self.bloger)
+                if follow:
+                    follow.delete()
+                response = self.auth_subscriber.post(
+                    reverse("profile_follow",
+                            kwargs={"username": self.bloger.username}),
+                    follow=True,
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(Follow.objects.count(), 1)
+
+    def test_unfollow(self):
+        """
+        Тест проверяет, что авторизованный пользователь может
+        отписываться от других пользователей.
+        """
+        for url in self.urls_list:
+            with self.subTest(url=url):
+                Follow.objects.get_or_create(user=self.subscriber,
+                                             author=self.bloger)
+                response = self.auth_subscriber.post(
+                    reverse("profile_unfollow",
+                            kwargs={"username": self.bloger.username}
+                            ),
+                    follow=True,
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(Follow.objects.count(), 0)
 
     def test_post_on_subscribes_page(self):
         """
