@@ -197,7 +197,13 @@ class PageTest(TestCase, CommonFunc):
                   "image": file},
             follow=True,
         )
-        self.assertTrue(response.context['form'].has_error('image'))
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response,
+            "form",
+            "image",
+            "Загрузите правильное изображение. Файл, который вы загрузили, поврежден или не является изображением.",
+        )
 
 
 class TestFollowings(TestCase, CommonFunc):
@@ -288,30 +294,14 @@ class TestComment(TestCase, CommonFunc):
         self.no_auth_guest = Client()
         self.auth_member.force_login(self.member)
 
-    def test_post_commenting(self):
+    def test_post_comment_by_auth_user(self):
         post = Post.objects.create(
-            text="This post for test comments", author=self.member
+            text="Test comment by auth user", author=self.member
         )
-        # Проверка не авторизованным пользователем
-        self.no_auth_guest.logout()
-        response = self.no_auth_guest.post(
-            reverse(
-                "add_comment",
-                kwargs={"username": self.auth_member, "post_id": post.id,},
-            ),
-            data={"text": "You can't!"},
-            follow=True,
-        )
-        response = self.auth_member.get(
-            reverse(
-                "post", kwargs={"username": self.member.username, "post_id": post.id}
-            ),
-        )
-        self.assertNotEqual(response, "You can't!")
-        # Проверка авторизованным пользователем
         response = self.auth_member.post(
             reverse(
-                "add_comment", kwargs={"username": self.member, "post_id": post.id,}
+                "add_comment", kwargs={"username": self.member,
+                                       "post_id": post.id,}
             ),
             data={"text": "test comment"},
             follow=True,
@@ -323,7 +313,29 @@ class TestComment(TestCase, CommonFunc):
         )
         response = self.auth_member.get(
             reverse(
-                "post", kwargs={"username": self.member.username, "post_id": post.id}
+                "post", kwargs={"username": self.member.username,
+                                "post_id": post.id}
             ),
         )
         self.assertContains(response, "test comment", status_code=200)
+
+    def test_post_comment_by_non_auth_user(self):
+        post = Post.objects.create(
+            text="Test comment by non auth user", author=self.member
+        )
+        self.no_auth_guest.logout()
+        response = self.no_auth_guest.post(
+            reverse(
+                "add_comment",
+                kwargs={"username": self.auth_member, "post_id": post.id,},
+            ),
+            data={"text": "You can't!"},
+            follow=True,
+        )
+        response = self.auth_member.get(
+            reverse(
+                "post", kwargs={"username": self.member.username,
+                                "post_id": post.id}
+            ),
+        )
+        self.assertNotEqual(response, "You can't!")
