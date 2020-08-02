@@ -52,18 +52,18 @@ def profile(request, username):
     paginator = Paginator(posts, 10)
     page_num = request.GET.get('page')
     page = paginator.get_page(page_num)
-    followers_sum = Follow.objects.filter(author=author).count()
-    following_sum = Follow.objects.filter(user=author).count()
+    followers_sum = author.following.count()
+    following_sum = author.follower.count()
     params = {
-                'page': page,
-                'paginator': paginator,
-                'author': author,
-                'followers_sum': followers_sum,
-                'following_sum': following_sum,
-                'post_sum': posts.count()
+        'page': page,
+        'paginator': paginator,
+        'author': author,
+        'followers_sum': followers_sum,
+        'following_sum': following_sum,
+        'post_sum': posts.count()
     }
     if request.user.is_authenticated:
-        following = Follow.objects.filter(user=request.user, author=author).first()
+        following = Follow.objects.filter(user=request.user, author=author).exists()
         params.update({'following': following,})
     return render(
         request,
@@ -177,6 +177,7 @@ def follow_index(request):
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     # Тут я зз как добавить get_or_crate, каждый раз как пробую - pytest'ы падают
+    # никак не выходит :(
     obj = Follow.objects.filter(user=request.user, author=author).exists()
     if not obj and author.id != request.user.id:
         new = Follow(user=request.user, author=author)

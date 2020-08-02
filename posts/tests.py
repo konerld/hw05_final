@@ -1,5 +1,5 @@
 from django.test import TestCase, Client
-from posts.models import Post, User, Group, Follow, Comment, FileModel
+from posts.models import Post, User, Group, Follow, Comment
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
@@ -30,8 +30,6 @@ class PageTest(TestCase, CommonFunc):
         self.group = Group.objects.create(
             title="test group", slug="test-slug", description="description",
         )
-        self.image_path = "./posts/test_data/monkey.png"
-        self.wrong_image_path = "./posts/test_data/monkey.txt"
 
     def test_client_page(self):
         """
