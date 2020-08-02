@@ -91,7 +91,3 @@ class Follow(models.Model):
                 name='unique posts_follow')
         ]
 
-
-class FileModel(models.Model):
-    name = models.CharField(max_length=255)
-    file = models.FileField()
