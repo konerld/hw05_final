@@ -93,6 +93,6 @@ class Follow(models.Model):
         ]
 
 
-# class FileModel(models.Model):
-#     name = models.CharField(max_length=255)
-#     file = models.FileField()
+class FileModel(models.Model):
+    name = models.CharField(max_length=255)
+    file = models.FileField()

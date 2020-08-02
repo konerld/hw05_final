@@ -1,7 +1,20 @@
 from django.test import TestCase, Client
-from posts.models import Post, User, Group, Follow, Comment
+from posts.models import Post, User, Group, Follow, Comment, FileModel
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+import tempfile
+from PIL import Image
 import os
+
+
+from django.core.files.images import ImageFile
+
+from shutil import copyfile
+from sorl.thumbnail import get_thumbnail
+
+# from django.core.files import File
+# from django.test import TestCase
+# import mock
 
 
 class CommonFunc:
@@ -131,10 +144,13 @@ class PageTest(TestCase, CommonFunc):
             " проверьте ошибку 404 на другой странице!",
         )
 
+    def _create_image(self):
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
+            image = Image.new('RGB', (200, 200), 'white')
+            image.save(f, 'PNG')
+        return open(f.name, mode='rb')
+
     def test_image(self):
-        self.assertEquals(
-            os.path.exists(self.image_path), True, "Не найден файл картинки для теста!"
-        )
         post = Post.objects.create(
             text="post with image", author=self.user, group=self.group
         )
@@ -146,16 +162,16 @@ class PageTest(TestCase, CommonFunc):
             ),
             reverse("group", kwargs={"slug": self.group.slug}),
         ]
-        with open(self.image_path, "rb") as img:
-            response = self.auth_client.post(
-                reverse(
-                    "post_edit",
-                    kwargs={"post_id": post.id, "username": self.user.username},
-                ),
-                data={"group": self.group.id, "text": "post with image", "image": img},
-                follow=True,
-            )
-            self.assertEqual(response.status_code, 200, "Ошибка добавления картинки!")
+        img = self._create_image()
+        response = self.auth_client.post(
+            reverse(
+                "post_edit",
+                kwargs={"post_id": post.id, "username": self.user.username},
+            ),
+            data={"group": self.group.id, "text": "post with image", "image": img},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200, "Ошибка добавления картинки!")
         for url in img_urls_list:
             response = self.auth_client.get(url)
             self.assertEqual(
@@ -164,6 +180,9 @@ class PageTest(TestCase, CommonFunc):
             self.assertContains(response, "<img")
 
     def test_wrong_image(self):
+        # file = SimpleUploadedFile('filename.txt', b'hello world', 'text/plain')
+
+
         self.assertEquals(
             os.path.exists(self.wrong_image_path),
             True,
