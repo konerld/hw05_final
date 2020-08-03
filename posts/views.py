@@ -173,12 +173,9 @@ def follow_index(request):
 @login_required()
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    # Тут я зз как добавить get_or_crate, каждый раз как пробую - pytest'ы падают
-    # никак не выходит :(
-    obj = Follow.objects.filter(user=request.user, author=author).exists()
-    if not obj and author.id != request.user.id:
-        new = Follow(user=request.user, author=author)
-        new.save()
+    if request.user != author:
+        Follow.objects.get_or_create(user=request.user, author=author)
+    # Спасибище!
     return redirect('profile', username=username)
 
 

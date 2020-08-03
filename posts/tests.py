@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
 from PIL import Image
+import pytest
 
 
 class CommonFunc:
@@ -139,6 +140,7 @@ class PageTest(TestCase, CommonFunc):
             " проверьте ошибку 404 на другой странице!",
         )
 
+    # @pytest.fixture
     def _create_image(self):
         with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as f:
             image = Image.new('RGB', (200, 200), 'white')
